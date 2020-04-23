@@ -52,11 +52,11 @@ def write_global_attrs(infile, outfile, **kwargs):
     for name in attrs.keys():
         outfile.attrs.create(name, attrs[name])
 
-def writeGroup(infile, outfile, name, nxtype, **kwargs):
+def write_group(infile, outfile, name, nxtype, **kwargs):
     if kwargs['verbose'] > 1:
         print("{} write(..., {}, {}, {})"(infile.path, name, nxtype, kwargs))
     if nxtype == SDS:
-        writeData(infile, outfile, name, **kwargs)
+        write_data(infile, outfile, name, **kwargs)
     else: # work on groups
         infile.opengroup(name, nxtype)
         entries = get_entries(infile)
@@ -64,11 +64,11 @@ def writeGroup(infile, outfile, name, nxtype, **kwargs):
     outfile.makegroup(name, nxtype)
     outfile.opengroup(name, nxtype)
     for temp in entries.keys():
-        writeGroup(infile, outfile, temp, entries[temp], **kwargs)
+        write_group(infile, outfile, temp, entries[temp], **kwargs)
     outfile.closegroup()
     infile.closegroup()
 
-def writeData(infile, outfile, name, **kwargs):
+def write_data(infile, outfile, name, **kwargs):
     infile.opendata(name)
 
     # check if linking to something else
@@ -124,12 +124,12 @@ def writeData(infile, outfile, name, **kwargs):
             outfile.putdata(data)
 
         # add some attributes
-        writeAttrs(infile, outfile, **kwargs)
+        write_attrs(infile, outfile, **kwargs)
         outfile.closedata()
 
         infile.closedata()
 
-def writeAttrs(infile, outfile, **kwargs):
+def write_attrs(infile, outfile, **kwargs):
     attrs = infile.getattrs()
     for name in attrs:
         value = attrs[name]
@@ -140,7 +140,7 @@ def writeAttrs(infile, outfile, **kwargs):
         except:
             outfile.putattr(name, value, value.dtype)
 
-def writeLinks(outfile, **kwargs):
+def write_links(outfile, **kwargs):
     for (src, name, target) in links_to_make:
         if kwargs['verbose'] > 2:
             print(src, name, target)
@@ -192,11 +192,11 @@ if __name__ == "__main__":
     write_global_attrs(infile, outfile)
     entries = get_entries(infile)
     for name in entries.keys():
-        writeGroup(infile, outfile, name, entries[name],
+        write_group(infile, outfile, name, entries[name],
                    eventlimit=options.eventlimit, loglimit=options.loglimit,
                    verbose=options.verbose)
     infile.close()
 
     # put in the links
-    writeLinks(outfile, verbose=options.verbose)
+    write_links(outfile, verbose=options.verbose)
     outfile.close()
