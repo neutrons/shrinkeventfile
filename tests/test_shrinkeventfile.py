@@ -20,12 +20,12 @@ def infile():
 
 @pytest.fixture
 def fake_infile():
-    filename = os.path.join(FAKE_INPUT_FILE)
+    filename = os.path.join(TEST_DATA_DIR, FAKE_INPUT_FILE)
     fake_infile =  h5py.File(filename, 'w')
     fake_infile.attrs.create("HDF5_VERSION", '1.8.5')
     fake_infile.close()
 
-    fake_infile =  h5py.File(FAKE_INPUT_FILE, 'r')
+    fake_infile =  h5py.File(filename, 'r')
     return fake_infile
 
 @pytest.fixture
@@ -89,3 +89,8 @@ def test_write_global_attrs_with_kwargs_to_overridte(fake_infile, outfile):
 def test_write_global_attrs_with_undefined_kwargs(fake_infile, outfile):
     with pytest.raises(shrink.NoAttrInHDF5FileException):
         shrink.write_global_attrs(fake_infile, outfile, Foo="Bar")
+
+def test_write_group(fake_infile, outfile):
+    name = 'instrument'
+    nxtype = 'NXinstrument'
+    shrink.write_group(infile, outfile, name, nxtype)
