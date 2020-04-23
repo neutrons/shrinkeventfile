@@ -18,6 +18,16 @@ def product(shape):
         total *= num
     return total
 
+def get_entries(handle, entry_point='entry'):
+    data = handle[entry_point]
+    result = {}
+    for item in data:
+        nxtype = SDS
+        if u'NX_class' in data[item].attrs.keys():
+            nxtype = data[item].attrs['NX_class'].decode('UTF-8')
+        result[item] = nxtype
+    return result
+
 def write_global_attrs(infile, outfile, **kwargs):
     '''
     This function just copies (blindly) all of the file attributes.
@@ -49,7 +59,7 @@ def writeGroup(infile, outfile, name, nxtype, **kwargs):
         writeData(infile, outfile, name, **kwargs)
     else: # work on groups
         infile.opengroup(name, nxtype)
-        entries = infile.getentries()
+        entries = get_entries(infile)
 
     outfile.makegroup(name, nxtype)
     outfile.opengroup(name, nxtype)
@@ -180,7 +190,7 @@ if __name__ == "__main__":
 
     # copy things over
     write_global_attrs(infile, outfile)
-    entries = infile.getentries()
+    entries = get_entries(infile)
     for name in entries.keys():
         writeGroup(infile, outfile, name, entries[name],
                    eventlimit=options.eventlimit, loglimit=options.loglimit,
