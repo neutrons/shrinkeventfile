@@ -2,29 +2,23 @@
 __VERSION__ = '0.1'
 
 import os
-import nxs
+import h5py 
 
 SDS = 'SDS'
 
 # each items is a triplit of (from, name, to)
 links_to_make = []
 
-def writeLinks(outfile, **kwargs):
-    for (src, name, target) in links_to_make:
-        if kwargs['verbose'] > 2:
-            print(src, name, target)
-        parent = src.replace('/'+name, '')
-        outfile.openpath(target)
-        if outfile.path != target:
-             raise RuntimeError("Something is very wrong: %s != %s" % \
-                               (outfile.path, target))
+class NoAttrInHDF5FileException(Exception):
+    '''Raise exception when attribute not found in HDF5 File'''
 
-        # in principle we should check if it is a linked group
-        linkid = outfile.getdataID()
-        outfile.openpath(parent)
-        outfile.makenamedlink(name, linkid)
+def product(shape):
+    total = 1
+    for num in shape:
+        total *= num
+    return total
 
-def writeGlobalAttrs(infile, outfile, **kwargs):
+def write_global_attrs(infile, outfile, **kwargs):
     '''
     This function just copies (blindly) all of the file attributes.
 
@@ -33,33 +27,36 @@ def writeGlobalAttrs(infile, outfile, **kwargs):
                     attribute to not be copied.
     '''
     # get the old file attributes
-    attrs = infile.getattrs()
+    attrs = infile.attrs
+
     # override with new values as requested
     for name in kwargs.keys():
+        if name not in attrs:
+            raise NoAttrInHDF5FileException()
         if kwargs[name] is None:
             del attrs[name]
         else:
             attrs[name] = kwargs[name]
+
     # put the values into the new file
     for name in attrs.keys():
-        outfile.putattr(name, attrs[name])
+        outfile.attrs.create(name, attrs[name])
 
-def writeAttrs(infile, outfile, **kwargs):
-    attrs = infile.getattrs()
-    for name in attrs:
-        value = attrs[name]
-        if kwargs['verbose'] > 2:
-            print(infile.path, name, value, type(value))
-        try:
-            outfile.putattr(name, value)
-        except:
-            outfile.putattr(name, value, value.dtype)
+def writeGroup(infile, outfile, name, nxtype, **kwargs):
+    if kwargs['verbose'] > 1:
+        print("{} write(..., {}, {}, {})"(infile.path, name, nxtype, kwargs))
+    if nxtype == SDS:
+        writeData(infile, outfile, name, **kwargs)
+    else: # work on groups
+        infile.opengroup(name, nxtype)
+        entries = infile.getentries()
 
-def product(shape):
-    total = 1
-    for num in shape:
-        total *= num
-    return total
+    outfile.makegroup(name, nxtype)
+    outfile.opengroup(name, nxtype)
+    for temp in entries.keys():
+        writeGroup(infile, outfile, temp, entries[temp], **kwargs)
+    outfile.closegroup()
+    infile.closegroup()
 
 def writeData(infile, outfile, name, **kwargs):
     infile.opendata(name)
@@ -122,22 +119,32 @@ def writeData(infile, outfile, name, **kwargs):
 
         infile.closedata()
 
+def writeAttrs(infile, outfile, **kwargs):
+    attrs = infile.getattrs()
+    for name in attrs:
+        value = attrs[name]
+        if kwargs['verbose'] > 2:
+            print(infile.path, name, value, type(value))
+        try:
+            outfile.putattr(name, value)
+        except:
+            outfile.putattr(name, value, value.dtype)
 
-def writeGroup(infile, outfile, name, nxtype, **kwargs):
-    if kwargs['verbose'] > 1:
-        print("{} write(..., {}, {}, {})"(infile.path, name, nxtype, kwargs))
-    if nxtype == SDS:
-        writeData(infile, outfile, name, **kwargs)
-    else: # work on groups
-        infile.opengroup(name, nxtype)
-        entries = infile.getentries()
+def writeLinks(outfile, **kwargs):
+    for (src, name, target) in links_to_make:
+        if kwargs['verbose'] > 2:
+            print(src, name, target)
+        parent = src.replace('/'+name, '')
+        outfile.openpath(target)
+        if outfile.path != target:
+             raise RuntimeError("Something is very wrong: %s != %s" % \
+                               (outfile.path, target))
 
-    outfile.makegroup(name, nxtype)
-    outfile.opengroup(name, nxtype)
-    for temp in entries.keys():
-        writeGroup(infile, outfile, temp, entries[temp], **kwargs)
-    outfile.closegroup()
-    infile.closegroup()
+        # in principle we should check if it is a linked group
+        linkid = outfile.getdataID()
+        outfile.openpath(parent)
+        outfile.makenamedlink(name, linkid)
+
 
 if __name__ == "__main__":
     import optparse
@@ -163,23 +170,23 @@ if __name__ == "__main__":
     if not len(args) == 2:
         parser.error("Must supply input and output file")
     args = [os.path.abspath(name) for name in args]
-    (infile, outfile) = args
-    if not os.path.exists(infile):
-        parser.error("'%s' does not exist" % infile)
+    (input_filename, output_filename) = args
+    if not os.path.exists(input_filename):
+        parser.error("'%s' does not exist" % input_filename)
 
     # open the file handles
-    input = nxs.napi.open(infile, 'r')
-    output = nxs.napi.open(outfile, 'w5')
+    infile  = h5py.File(input_filename, 'r')
+    outfile = h5py.File(output_filename, 'w')
 
     # copy things over
-    writeGlobalAttrs(input, output)
-    entries = input.getentries()
+    write_global_attrs(infile, outfile)
+    entries = infile.getentries()
     for name in entries.keys():
-        writeGroup(input, output, name, entries[name],
+        writeGroup(infile, outfile, name, entries[name],
                    eventlimit=options.eventlimit, loglimit=options.loglimit,
                    verbose=options.verbose)
-    input.close()
+    infile.close()
 
     # put in the links
-    writeLinks(output, verbose=options.verbose)
-    output.close()
+    writeLinks(outfile, verbose=options.verbose)
+    outfile.close()
