@@ -12,7 +12,12 @@ RUN apt update \
         python3-pip \
         vim \
         wget \
-    && pip3 install flake8 h5py pytest \
+    && pip3 install \
+        flake8 \
+        h5py \
+        ipython \
+        pytest \
+        pytest-cov \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application
