@@ -27,7 +27,7 @@ def write_global_attrs(infile, outfile, **kwargs):
                     attribute to not be copied.
     '''
     # get the old file attributes
-    attrs = infile.attrs
+    attrs = dict(infile.attrs)
 
     # override with new values as requested
     for name in kwargs.keys():
