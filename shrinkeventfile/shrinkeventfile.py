@@ -18,8 +18,7 @@ def product(shape):
         total *= num
     return total
 
-def get_entries(handle, entry_point='entry'):
-    data = handle[entry_point]
+def get_entries(data):
     result = {}
     for item in data:
         nxtype = SDS
@@ -52,97 +51,104 @@ def write_global_attrs(infile, outfile, **kwargs):
     for name in attrs.keys():
         outfile.attrs.create(name, attrs[name])
 
-def write_group(infile, outfile, name, nxtype, **kwargs):
-    if kwargs['verbose'] > 1:
-        print("{} write(..., {}, {}, {})"(infile.path, name, nxtype, kwargs))
+def write_group(ingroup, outgroup, name, **kwargs):
+
+    # Get the NeXus type attribute
+    nxtype = ingroup[name].attrs.get('NX_class', SDS)
+
+    # Debug - print the group, name of next directory and its NeXus type
+    verbose = kwargs.get('verbose', 0)
+    if verbose > 1:
+        print("{} write(..., {}, {})".format(ingroup, name, nxtype))
+
+    # If we are at a "leaf" of the tree, just write the data
     if nxtype == SDS:
-        write_data(infile, outfile, name, **kwargs)
-    else: # work on groups
-        infile.opengroup(name, nxtype)
-        entries = get_entries(infile)
+        indataset = ingroup[name]
+        write_data(indataset, outgroup, name, **kwargs)
 
-    outfile.makegroup(name, nxtype)
-    outfile.opengroup(name, nxtype)
-    for temp in entries.keys():
-        write_group(infile, outfile, temp, entries[temp], **kwargs)
-    outfile.closegroup()
-    infile.closegroup()
+    # If we are still on group nodes of the tree, traverse recursively
+    else:
+        # Create the next groups we will be copying
+        ingroup_next = ingroup[name]
+        outgroup_next = outgroup.create_group(name)
+        write_attrs(ingroup_next, outgroup_next)
 
-def write_data(infile, outfile, name, **kwargs):
-    infile.opendata(name)
+        # Get all the current entries of this next group node
+        entries = get_entries(ingroup_next)
+
+        for temp in entries.keys():
+            write_group(ingroup_next, outgroup_next, temp, **kwargs)
+
+def write_data(indataset, outgroup, name, verbose=0, eventlimit=0, loglimit=0):
+    print(indataset)
+    print(outgroup)
+    print(name)
 
     # check if linking to something else
-    linkto = infile.link()
-    if linkto is not None and linkto != infile.path:
-        links_to_make.append((infile.path, name, linkto))
+    linkto = indataset.parent.get(indataset.name, getlink=True)
+    is_a_link = not isinstance(linkto, h5py.HardLink)
+    if is_a_link:
+        links_to_make.append((indataset, name, linkto))
     else:
         # shape is needed for next step
-        (shape, ctype) = infile.getinfo()
+        shape = indataset.shape
+        dtype = indataset.dtype
 
         # decide whether or not to limit the node
         # NOTE: sns files link frequency/time as event pulse time
         limitlength = -1 # by default do nothing
-        if kwargs['eventlimit'] > 0:
+        if eventlimit > 0:
             if name == "event_id" \
                 or name == "event_index" \
                 or name == "event_pixel_id" \
                 or name == "event_time_offset" \
                 or name == "event_time_zero" \
                 or name == "event_time_of_flight" \
-                or infile.path.endswith("DASlogs/frequency/time"):
+                or indataset.name.endswith("DASlogs/frequency/time"):
                 if len(shape) == 1:
-                    if shape[0] > kwargs['eventlimit']:
-                        limitlength = kwargs['eventlimit']
-        if kwargs['loglimit'] > 0:
-            path = infile.path
-            if "DASlogs" in path:
+                    if shape[0] > eventlimit:
+                        limitlength = eventlimit
+        if loglimit > 0:
+            if "DASlogs" in indataset.name:
                 if len(shape) == 1:
                     if path.endswith("DASlogs/frequency/time"):
-                        if shape[0] > kwargs['eventlimit']:
-                            limitlength = kwargs['eventlimit']
-                    if shape[0] > kwargs['loglimit']:
-                        limitlength = kwargs['loglimit']
+                        if shape[0] > eventlimit:
+                            limitlength = eventlimit
+                    if shape[0] > loglimit:
+                        limitlength = loglimit
 
 
         # read in the appropriate amount of data
         if limitlength > 0:
-            if kwargs['verbose'] > 1:
+            if verbose > 1:
                 msg = "limiting length of {} from {} to {}"
-                print(msg.format(infile.path, shape, [limitlength]))
-            shape = [limitlength]
-            data = infile.getslab([0], shape)
+                print(msg.format(indataset.name, shape, [limitlength]))
+            shape = limitlength
+            data = indataset[0:shape]
         else:
-             data = infile.getdata()
+             data = indataset[()]
 
         if name == "event_time_zero":
-            print("limiting length of {} to {}".format(infile.path, shape))
+            print("limiting length of {} to {}".format(indataset.name, shape))
 
         # put the data itself into the file
-        outfile.makedata(name, ctype, shape)
-        outfile.opendata(name)
-        if product(shape) > 0: # some things are zero length
-            outfile.putdata(data)
+        outdataset = outgroup.create_dataset(name, data=data)
 
         # add some attributes
-        write_attrs(infile, outfile, **kwargs)
-        outfile.closedata()
+        write_attrs(indataset, outdataset, verbose=verbose)
 
-        infile.closedata()
-
-def write_attrs(infile, outfile, **kwargs):
-    attrs = infile.getattrs()
-    for name in attrs:
-        value = attrs[name]
-        if kwargs['verbose'] > 2:
+def write_attrs(infile, outfile, verbose=0):
+    for name, value in infile.attrs.items():
+        if verbose > 2:
             print(infile.path, name, value, type(value))
         try:
-            outfile.putattr(name, value)
+            outfile.attrs.create(name, value)
         except:
-            outfile.putattr(name, value, value.dtype)
+            outfile.attrs.create(name, value, value.dtype)
 
-def write_links(outfile, **kwargs):
+def write_links(outfile, verbose):
     for (src, name, target) in links_to_make:
-        if kwargs['verbose'] > 2:
+        if verbose > 2:
             print(src, name, target)
         parent = src.replace('/'+name, '')
         outfile.openpath(target)
@@ -192,9 +198,14 @@ if __name__ == "__main__":
     write_global_attrs(infile, outfile)
     entries = get_entries(infile)
     for name in entries.keys():
-        write_group(infile, outfile, name, entries[name],
-                   eventlimit=options.eventlimit, loglimit=options.loglimit,
-                   verbose=options.verbose)
+        write_group(
+            infile,
+            outfile,
+            name,
+            entries[name],
+            verbose=options.verbose,
+            eventlimit=options.eventlimit,
+            loglimit=options.loglimit)
     infile.close()
 
     # put in the links

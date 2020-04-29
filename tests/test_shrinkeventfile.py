@@ -42,7 +42,7 @@ def test_product():
     assert total == 24
 
 def test_get_entries(infile):
-    result = get_entries(infile)
+    result = get_entries(infile['entry'])
 
     # NXcollection entry
     assert "DASlogs" in result
@@ -90,7 +90,27 @@ def test_write_global_attrs_with_undefined_kwargs(fake_infile, outfile):
     with pytest.raises(shrink.NoAttrInHDF5FileException):
         shrink.write_global_attrs(fake_infile, outfile, Foo="Bar")
 
-def test_write_group(fake_infile, outfile):
+def test_write_data_for_string_dataset(infile, outfile):
+    dataset_name = 'beamline'
+    path = os.path.join('entry', 'instrument', dataset_name)
+    indataset = infile[path]
+    outgroup = outfile.create_group(path)
+    shrink.write_data(indataset, outgroup, dataset_name, verbose=2, eventlimit=10, loglimit=10)
+    assert outgroup.get(dataset_name)[0].decode('UTF-8') == 'BL1B'
+
+def test_write_data_for_array_dataset(infile, outfile):
+    dataset_name = 'event_time_zero'
+    path = os.path.join('entry', 'instrument', 'bank1', dataset_name)
+    indataset = infile[path]
+    outgroup = outfile.create_group(path)
+    elimit=10
+    shrink.write_data(indataset, outgroup, dataset_name, verbose=2, eventlimit=elimit, loglimit=10)
+    assert len(indataset) != elimit
+    assert len(outgroup.get(dataset_name)) == elimit
+
+def test_write_group(infile, outfile):
     name = 'instrument'
-    nxtype = 'NXinstrument'
-    shrink.write_group(infile, outfile, name, nxtype)
+    ingroup = infile['entry']
+    outgroup = outfile.create_group('entry')
+    shrink.write_group(ingroup, outgroup, name, verbose=2)
+    assert outgroup.get('/entry/instrument/beamline')[0].decode('UTF-8') == 'BL1B'
