@@ -80,10 +80,6 @@ def write_group(ingroup, outgroup, name, **kwargs):
             write_group(ingroup_next, outgroup_next, temp, **kwargs)
 
 def write_data(indataset, outgroup, name, verbose=0, eventlimit=0, loglimit=0):
-    print(indataset)
-    print(outgroup)
-    print(name)
-
     # check if linking to something else
     linkto = indataset.parent.get(indataset.name, getlink=True)
     is_a_link = not isinstance(linkto, h5py.HardLink)
