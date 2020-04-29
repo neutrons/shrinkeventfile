@@ -12,17 +12,13 @@ RUN apt update \
         python3-pip \
         vim \
         wget \
-    && pip3 install \
-        flake8 \
-        h5py \
-        ipython \
-        pytest \
-        pytest-cov \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy application
 WORKDIR /app
-COPY . /app
+COPY ./requirements-dev.txt /app
+RUN pip3 install -r requirements-dev.txt
+COPY ./ /app
 
 # Add test file
 RUN wget -O /app/test_event_file.nxs http://${MANTID_FTP_SERVER}/ftp/external-data/MD5/${EVENT_FILE_MD5}
