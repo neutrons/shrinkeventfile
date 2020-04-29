@@ -111,3 +111,4 @@ dmypy.json
 # NeXus and HDF5 files
 *.nxs
 *.h5
+*.hdf5
