@@ -28,4 +28,4 @@ ARG VIMRC=""
 RUN echo ${VIMRC}
 RUN echo "${VIMRC}" >> /root/.vimrc
 
-CMD ["python3", "/app/shrinkeventfile"]
+CMD ["python3", "./shrinkeventfile/shrinkeventfile.py"]
