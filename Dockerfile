@@ -16,9 +16,8 @@ RUN apt update \
 
 # Copy application
 WORKDIR /app
-COPY ./requirements-dev.txt /app
-RUN pip3 install -r requirements-dev.txt
 COPY ./ /app
+RUN pip3 install .[test]
 
 # Add test file
 RUN wget -O /app/test_event_file.nxs http://${MANTID_FTP_SERVER}/ftp/external-data/MD5/${EVENT_FILE_MD5}
