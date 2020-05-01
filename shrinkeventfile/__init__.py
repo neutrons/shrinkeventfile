@@ -16,3 +16,7 @@ __all__ = [
     "write_links",
     "shrink_and_write_eventfile",
 ]
+
+from ._version import get_versions
+__version__ = get_versions()['version']
+del get_versions
