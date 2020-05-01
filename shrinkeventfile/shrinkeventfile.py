@@ -178,8 +178,7 @@ def shrink_and_write_eventfile(input_filename, output_filename, **kwargs):
 
     outfile.close()
 
-
-if __name__ == "__main__":
+def main():
     import optparse
 
     info = []
@@ -212,3 +211,7 @@ if __name__ == "__main__":
 
     # Take the input filename, shrink based on inputs, and save to output file
     shrink_and_write_eventfile(*args, **options)
+
+if __name__ == "__main__":
+    main()
+
