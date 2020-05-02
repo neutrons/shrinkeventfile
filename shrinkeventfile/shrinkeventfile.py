@@ -178,40 +178,64 @@ def shrink_and_write_eventfile(input_filename, output_filename, **kwargs):
 
     outfile.close()
 
-def main():
-    import optparse
+def main(config=None):
+    DEFAULT_EVENTLIMIT=-1
+    DEFAULT_LOGLIMIT=-1
+    DEFAULT_VERBOSE=0
 
-    info = []
-    parser = optparse.OptionParser("usage %prog [options] <in> <out>",
-                                   None, optparse.Option, __VERSION__,
-                                   'error', ' '.join(info))
-    parser.add_option("--limit-events", dest="eventlimit",
-                      help="Limit the size of event lists")
-    parser.add_option("--limit-logs", dest="loglimit",
-                      help="Limit the size of logs")
-    parser.add_option("-d", "--debug", dest="verbose", default=0,
-                      action="count",
-                      help="Increase print level")
-    parser.set_defaults(eventlimit=-1)
-    parser.set_defaults(loglimit=-1)
-    (options, args) = parser.parse_args()
-    options.eventlimit = int(options.eventlimit)
-    options.loglimit = int(options.loglimit)
+    if not config:
+        import argparse
 
-    if not len(args) == 2:
-        parser.error("Must supply input and output file")
+        info = []
+        parser = argparse.ArgumentParser(description="Shrink Event File")
+
+        parser.add_argument(
+            "infilename",
+            help="Input event file to copy from")
+        parser.add_argument(
+            "outfilename",
+            help="Output filename for new, shrunken event file")
+
+        parser.add_argument(
+            "--limit-events",
+            dest="eventlimit",
+            default=DEFAULT_EVENTLIMIT,
+            help="Limit the size of event lists")
+        parser.add_argument(
+            "--limit-logs",
+            dest="loglimit",
+            default=DEFAULT_LOGLIMIT,
+            help="Limit the size of logs")
+        parser.add_argument("-d", "--debug",
+            dest="verbose",
+            default=DEFAULT_VERBOSE,
+            action="count",
+            help="Increase print level")
+
+        args = parser.parse_args()
+
+        config = vars(args)
+
+    # Extract inputs from configuration input (i.e. JSON)
+    infilename  = config.get('infilename')
+    outfilename = config.get('outfilename')
+
+    kwargs = {
+        'eventlimit': config.get('eventlimit', DEFAULT_EVENTLIMIT),
+        'loglimit':   config.get('loglimit', DEFAULT_LOGLIMIT),
+        'verbose':    config.get('verbose', DEFAULT_VERBOSE),
+    }
 
     # Get the absolute paths for the input and output filenames
-    args = [os.path.abspath(name) for name in args]
+    infilename = os.path.abspath(infilename)
+    outfilename = os.path.abspath(outfilename)
 
     # Make sure input file name exists
-    (input_filename, output_filename) = args
-    if not os.path.exists(input_filename):
-        parser.error("'%s' does not exist" % input_filename)
+    if not os.path.exists(infilename):
+        parser.error("{} does not exist".format(inputfilename))
 
     # Take the input filename, shrink based on inputs, and save to output file
-    shrink_and_write_eventfile(*args, **options)
+    shrink_and_write_eventfile(infilename, outfilename, **kwargs)
 
 if __name__ == "__main__":
     main()
-
