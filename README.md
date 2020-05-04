@@ -27,7 +27,7 @@ NOTE: To "live edit" the application (synced with the host),
 docker run  myshrink-dev pytest tests/
 ```
 
-# Coverage report with lines listed that are NOT yet tested
+### Coverage report with lines listed that are NOT yet tested
 ```
 docker run  myshrink-dev pytest --cov-report term-missing  --cov=shrinkeventfile/ tests/test_shrinkeventfile.py
 ```
