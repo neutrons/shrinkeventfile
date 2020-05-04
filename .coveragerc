@@ -1,0 +1,3 @@
+[run]
+omit = 
+    shrinkeventfile/_version.py

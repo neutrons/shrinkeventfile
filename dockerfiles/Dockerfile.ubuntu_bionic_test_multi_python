@@ -1,0 +1,56 @@
+FROM ubuntu:bionic
+
+ARG MANTID_FTP_SERVER="198.74.56.37"
+ARG EVENT_FILE_MD5="34a9f4551d909093871a360d207e14ff"
+  
+ENV DEBIAN_FRONTEND noninteractive
+ENV LC_ALL C.UTF-8
+ENV LANG C.UTF-8
+
+ENV PYENV_ROOT /root/.pyenv
+ENV PATH $PYENV_ROOT/shims:$PYENV_ROOT/bin:$PATH
+
+# Install prerequisites
+RUN apt-get update \
+    && apt-get install -y \
+        build-essential \
+        curl \
+        git \
+        libbz2-dev \
+        libffi-dev \
+        liblzma-dev \
+        libncurses5-dev \
+        libncursesw5-dev \
+        libreadline-dev \
+        libsqlite3-dev \
+        libssl-dev \
+        llvm \
+        make \
+        python-openssl \
+        python3-pip \
+        tk-dev \
+        vim \
+        wget \
+        xz-utils \
+        zlib1g-dev \
+    && apt-get install -y \
+        libhdf5-dev \
+        python3-numpy \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl https://pyenv.run | bash
+RUN pyenv install 3.5.7 \
+    && pyenv install 3.6.9 \
+    && pyenv install 3.7.4 \
+    && pyenv global 3.6.9 3.7.4 3.5.7 \
+    && pip3 install pipenv tox flake8 pytest pytest-cov
+
+WORKDIR /app
+
+# Add test file
+RUN wget -O /app/test_event_file.nxs http://${MANTID_FTP_SERVER}/ftp/external-data/MD5/${EVENT_FILE_MD5}
+
+COPY . /app
+RUN pip3 install .[test]
+
+CMD ["python3", "./shrinkeventfile/shrinkeventfile.py"]

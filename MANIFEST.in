@@ -1,0 +1,2 @@
+include versioneer.py
+include shrinkeventfile/_version.py
