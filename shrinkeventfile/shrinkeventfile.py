@@ -1,6 +1,4 @@
 #!/usr/bin/env python
-__VERSION__ = '0.1'
-
 import os
 import h5py
 
