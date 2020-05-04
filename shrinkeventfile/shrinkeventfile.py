@@ -25,7 +25,7 @@ def get_entries(data):
     result = {}
     for item in data:
         nxtype = SDS
-        if u'NX_class' in data[item].attrs.keys():
+        if 'NX_class' in data[item].attrs.keys():
             nxtype = data[item].attrs['NX_class'].decode('UTF-8')
         result[item] = nxtype
     return result
