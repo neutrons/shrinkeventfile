@@ -96,13 +96,10 @@ def write_data(indataset, outgroup, name, verbose=0, eventlimit=0, loglimit=0):
         # decide whether or not to limit the node
         # NOTE: sns files link frequency/time as event pulse time
         limitlength = -1  # by default do nothing
-        if eventlimit > 0:
+        if eventlimit >= 0: # setting to zero will remove all events
             if name == "event_id" \
-                    or name == "event_index" \
-                    or name == "event_pixel_id" \
-                    or name == "event_time_offset" \
-                    or name == "event_time_zero" \
-                    or name == "event_time_of_flight" \
+                    or name in ["event_index", "event_pixel_id", "event_time_offset",
+                                "event_time_zero", "event_time_of_flight"] \
                     or indataset.name.endswith("DASlogs/frequency/time"):
                 if len(shape) == 1:
                     if shape[0] > eventlimit:
@@ -117,7 +114,7 @@ def write_data(indataset, outgroup, name, verbose=0, eventlimit=0, loglimit=0):
                         limitlength = loglimit
 
         # read in the appropriate amount of data
-        if limitlength > 0:
+        if limitlength >= 0:
             if verbose > 1:
                 msg = "limiting length of {} from {} to {}"
                 print(msg.format(indataset.name, shape, [limitlength]))
@@ -197,11 +194,13 @@ def main(config=None):
         parser.add_argument(
             "--limit-events",
             dest="eventlimit",
+            type=int,
             default=DEFAULT_EVENTLIMIT,
             help="Limit the size of event lists")
         parser.add_argument(
             "--limit-logs",
             dest="loglimit",
+            type=int,
             default=DEFAULT_LOGLIMIT,
             help="Limit the size of logs")
         parser.add_argument("-d", "--debug",
