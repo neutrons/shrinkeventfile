@@ -96,10 +96,11 @@ def write_data(indataset, outgroup, name, verbose=0, eventlimit=0, loglimit=0):
         # decide whether or not to limit the node
         # NOTE: sns files link frequency/time as event pulse time
         limitlength = -1  # by default do nothing
-        if eventlimit >= 0: # setting to zero will remove all events
+        if eventlimit >= 0:  # setting to zero will remove all events
             if name == "event_id" \
-                    or name in ["event_index", "event_pixel_id", "event_time_offset",
-                                "event_time_zero", "event_time_of_flight"] \
+                    or name in ["event_index", "event_pixel_id",
+                                "event_time_offset", "event_time_zero",
+                                "event_time_of_flight"] \
                     or indataset.name.endswith("DASlogs/frequency/time"):
                 if len(shape) == 1:
                     if shape[0] > eventlimit:
@@ -173,15 +174,15 @@ def shrink_and_write_eventfile(input_filename, output_filename, **kwargs):
 
     outfile.close()
 
+
 def main(config=None):
-    DEFAULT_EVENTLIMIT=-1
-    DEFAULT_LOGLIMIT=-1
-    DEFAULT_VERBOSE=0
+    DEFAULT_EVENTLIMIT = -1
+    DEFAULT_LOGLIMIT = -1
+    DEFAULT_VERBOSE = 0
 
     if not config:
         import argparse
 
-        info = []
         parser = argparse.ArgumentParser(description="Shrink Event File")
 
         parser.add_argument(
@@ -203,7 +204,8 @@ def main(config=None):
             type=int,
             default=DEFAULT_LOGLIMIT,
             help="Limit the size of logs")
-        parser.add_argument("-d", "--debug",
+        parser.add_argument(
+            "-d", "--debug",
             dest="verbose",
             default=DEFAULT_VERBOSE,
             action="count",
@@ -214,7 +216,7 @@ def main(config=None):
         config = vars(args)
 
     # Extract inputs from configuration input (i.e. JSON)
-    infilename  = config.get('infilename')
+    infilename = config.get('infilename')
     outfilename = config.get('outfilename')
 
     kwargs = {
@@ -229,10 +231,11 @@ def main(config=None):
 
     # Make sure input file name exists
     if not os.path.exists(infilename):
-        parser.error("{} does not exist".format(inputfilename))
+        parser.error("{} does not exist".format(infilename))
 
     # Take the input filename, shrink based on inputs, and save to output file
     shrink_and_write_eventfile(infilename, outfilename, **kwargs)
+
 
 if __name__ == "__main__":
     main()
