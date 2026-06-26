@@ -2,14 +2,15 @@
 set -euo pipefail
 
 INPUT="tests/data/NOM_92628.nxs.h5"
-OUTPUT=$(mktemp /tmp/shrinkevent_systest_XXXXXX.nxs.h5)
-trap 'rm -f "$OUTPUT"' EXIT
+OUTPUT_DIR=$(mktemp -d /tmp/shrinkevent_systest_XXXXXX)
+OUTPUT="$OUTPUT_DIR/output.nxs.h5"
+trap 'rm -f "$OUTPUT_DIR"' EXIT
 
-echo "Running: pixi run shrinkevent $INPUT $OUTPUT --limit-events 100 --limit-logs 10"
-pixi run shrinkevent "$INPUT" "$OUTPUT" --limit-events 100 --limit-logs 10
+echo "Running: pixi run -e dev shrinkevent $INPUT $OUTPUT --limit-events 100 --limit-logs 10"
+pixi run -e dev shrinkevent "$INPUT" "$OUTPUT" --limit-events 100 --limit-logs 10
 
-if [ ! -f "$OUTPUT" ]; then
-    echo "FAIL: output file was not created"
+if [ ! -s "$OUTPUT" ]; then
+    echo "FAIL: output file was not created or is empty"
     exit 1
 fi
 

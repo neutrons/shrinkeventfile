@@ -180,11 +180,10 @@ def main(config=None):
     DEFAULT_LOGLIMIT = -1
     DEFAULT_VERBOSE = 0
 
+    import argparse
+    parser = argparse.ArgumentParser(description="Shrink Event File")
+
     if not config:
-        import argparse
-
-        parser = argparse.ArgumentParser(description="Shrink Event File")
-
         parser.add_argument(
             "infilename",
             help="Input event file to copy from")
