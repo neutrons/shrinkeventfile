@@ -4,7 +4,7 @@ set -euo pipefail
 INPUT="tests/data/NOM_92628.nxs.h5"
 OUTPUT_DIR=$(mktemp -d /tmp/shrinkevent_systest_XXXXXX)
 OUTPUT="$OUTPUT_DIR/output.nxs.h5"
-trap 'rm -f "$OUTPUT_DIR"' EXIT
+trap 'rm -rf "$OUTPUT_DIR"' EXIT
 
 echo "Running: pixi run -e dev shrinkevent $INPUT $OUTPUT --limit-events 100 --limit-logs 10"
 pixi run -e dev shrinkevent "$INPUT" "$OUTPUT" --limit-events 100 --limit-logs 10
