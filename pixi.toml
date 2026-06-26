@@ -1,0 +1,30 @@
+[workspace]
+name = "shrinkeventfile"
+version = "0.1.0"
+description = "Shrink NeXuS/HDF5 event files"
+channels = ["conda-forge"]
+platforms = ["linux-64", "osx-arm64", "osx-64"]
+
+[dependencies]
+python = ">=3.8,<3.12"
+h5py = "*"
+
+[pypi-dependencies]
+shrinkeventfile = { path = ".", editable = true }
+
+[tasks]
+shrinkevent = "shrinkeventfile"
+
+[feature.dev.dependencies]
+pytest = "*"
+pytest-cov = "*"
+flake8 = "*"
+
+[feature.dev.tasks]
+test    = "pytest tests/"
+lint    = "flake8 shrinkeventfile/ tests/"
+systest = "bash tests/test_system.sh"
+
+[environments]
+default = { features = [] }
+dev     = { features = ["dev"] }

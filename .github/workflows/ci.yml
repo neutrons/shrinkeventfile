@@ -1,0 +1,26 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          environments: dev
+
+      - name: Lint
+        run: pixi run -e dev lint
+
+      - name: Unit tests
+        run: pixi run -e dev test
+
+      - name: System test
+        run: pixi run -e dev systest
